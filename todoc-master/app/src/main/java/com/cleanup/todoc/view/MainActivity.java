@@ -1,13 +1,7 @@
-package com.cleanup.todoc.ui;
+package com.cleanup.todoc.view;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,14 +10,26 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.cleanup.todoc.R;
 import com.cleanup.todoc.model.Project;
 import com.cleanup.todoc.model.Task;
+import com.cleanup.todoc.viewModel.TaskViewModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 /**
  * <p>Home activity of the application which is displayed when the user opens the app.</p>
@@ -32,6 +38,10 @@ import java.util.Date;
  * @author Gaëtan HERFRAY
  */
 public class MainActivity extends AppCompatActivity implements TasksAdapter.DeleteTaskListener {
+    private TaskViewModel mTaskViewModel;
+    public static final String EXTRA_PROJECT_ID = "com.cleanup.todoc.view.EXTRA_PROJECT_ID";
+    public static final String EXTRA_NAME = "com.cleanup.todoc.view.NAME";
+    public static final String EXTRA_DATE = "com.cleanup.todoc.view.EXTRA_DATE";
     /**
      * List of all projects available in the application
      */
@@ -91,8 +101,9 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
+
+        updateView();
 
         listTasks = findViewById(R.id.list_tasks);
         lblNoTasks = findViewById(R.id.lbl_no_task);
@@ -108,6 +119,22 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         });
     }
 
+    private void updateView() {
+        mTaskViewModel = ViewModelProviders.of(this).get(TaskViewModel.class);
+        mTaskViewModel.getAllTask().observe(this, new Observer<List<Task>>() {
+            @Override
+            public void onChanged(List<Task> tasks) {
+                if (tasks.size()==0) {
+                    lblNoTasks.setVisibility(View.VISIBLE);
+                    listTasks.setVisibility(View.GONE);
+                } else {
+                    lblNoTasks.setVisibility(View.GONE);
+                    listTasks.setVisibility(View.VISIBLE);
+                }adapter.updateTasks(tasks);
+            }
+        });
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.actions, menu);
@@ -116,27 +143,60 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+//        int id = item.getItemId();
+//
+//        if (id == R.id.filter_alphabetical) {
+//            mTaskViewModel.ascendingFilterName();
+////            sortMethod = SortMethod.ALPHABETICAL;
+//        } else if (id == R.id.filter_alphabetical_inverted) {
+//            mTaskViewModel.descendingFilterName();
+////            sortMethod = SortMethod.ALPHABETICAL_INVERTED;
+//        } else if (id == R.id.filter_oldest_first) {
+//            mTaskViewModel.ascendingFilterDate();
+////            sortMethod = SortMethod.OLD_FIRST;
+//        } else if (id == R.id.filter_recent_first) {
+//            mTaskViewModel.descendingFilterDate();
+////            sortMethod = SortMethod.RECENT_FIRST;
+//        }
+//        updateView();
+////        updateTasks();
+//
+//        return super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.filter_alphabetical:
+                mTaskViewModel.ascendingFilterName();
+                adapter.notifyDataSetChanged();
+                updateView();
+                return true;
+            case R.id.filter_alphabetical_inverted:
+                mTaskViewModel.descendingFilterName().observe(this, new Observer<List<Task>>() {
+                    @Override
+                    public void onChanged(List<Task> tasks) {
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+//                updateView();
+                return true;
+            case R.id.filter_oldest_first:
+                mTaskViewModel.ascendingFilterDate();
+                updateView();
+                return true;
+            case R.id.filter_recent_first:
+                mTaskViewModel.descendingFilterDate();
+                updateView();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
 
-        if (id == R.id.filter_alphabetical) {
-            sortMethod = SortMethod.ALPHABETICAL;
-        } else if (id == R.id.filter_alphabetical_inverted) {
-            sortMethod = SortMethod.ALPHABETICAL_INVERTED;
-        } else if (id == R.id.filter_oldest_first) {
-            sortMethod = SortMethod.OLD_FIRST;
-        } else if (id == R.id.filter_recent_first) {
-            sortMethod = SortMethod.RECENT_FIRST;
         }
-
-        updateTasks();
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onDeleteTask(Task task) {
-        tasks.remove(task);
-        updateTasks();
+//        tasks.remove(task);
+        mTaskViewModel.delete(task);
+        updateView();
+//        updateTasks();
     }
 
     /**
@@ -162,27 +222,29 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             }
             // If both project and name of the task have been set
             else if (taskProject != null) {
-                // TODO: Replace this by id of persisted task
-                long id = (long) (Math.random() * 50000);
+//                // TODO: Replace this by id of persisted task
+//                long id = (long) (Math.random() * 50000);
 
 
                 Task task = new Task(
-                        id,
+//                        id,
                         taskProject.getId(),
                         taskName,
                         new Date().getTime()
                 );
-
-                addTask(task);
+                mTaskViewModel.insert(task);
+                updateView();
+//                addTask(task);
 
                 dialogInterface.dismiss();
             }
             // If name has been set, but project has not been set (this should never occur)
             else{
+                Toast.makeText(this, "Task Not Saved", Toast.LENGTH_SHORT).show();
                 dialogInterface.dismiss();
             }
         }
-        // If dialog is aloready closed
+        // If dialog is already closed
         else {
             dialogInterface.dismiss();
         }
@@ -202,15 +264,19 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         populateDialogSpinner();
     }
 
-    /**
-     * Adds the given task to the list of created tasks.
-     *
-     * @param task the task to be added to the list
-     */
-    private void addTask(@NonNull Task task) {
-        tasks.add(task);
-        updateTasks();
-    }
+//    /**
+//     * Adds the given task to the list of created tasks.
+//     *
+//     * @param task the task to be added to the list
+//     */
+//    private void addTask(@NonNull Task task) {
+//
+//        mTaskViewModel.insert(task);
+//        Toast.makeText(this, "Task saved", Toast.LENGTH_SHORT).show();
+//        updateView();
+//        tasks.add(task);
+//        updateTasks();
+//    }
 
     /**
      * Updates the list of tasks in the UI

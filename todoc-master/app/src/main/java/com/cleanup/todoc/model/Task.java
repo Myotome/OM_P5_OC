@@ -1,7 +1,10 @@
 package com.cleanup.todoc.model;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.PrimaryKey;
 
 import java.util.Comparator;
 
@@ -10,10 +13,12 @@ import java.util.Comparator;
  *
  * @author Gaëtan HERFRAY
  */
+@Entity(tableName = "task_table")
 public class Task {
     /**
      * The unique identifier of the task
      */
+    @PrimaryKey(autoGenerate = true)
     private long id;
 
     /**
@@ -37,13 +42,13 @@ public class Task {
     /**
      * Instantiates a new Task.
      *
-     * @param id                the unique identifier of the task to set
+     *
      * @param projectId         the unique identifier of the project associated to the task to set
      * @param name              the name of the task to set
      * @param creationTimestamp the timestamp when the task has been created to set
      */
-    public Task(long id, long projectId, @NonNull String name, long creationTimestamp) {
-        this.setId(id);
+    public Task( long projectId, @NonNull String name, long creationTimestamp) {
+//        this.setId(id);
         this.setProjectId(projectId);
         this.setName(name);
         this.setCreationTimestamp(creationTimestamp);
@@ -58,14 +63,19 @@ public class Task {
         return id;
     }
 
-    /**
-     * Sets the unique identifier of the task.
-     *
-     * @param id the unique idenifier of the task to set
-     */
-    private void setId(long id) {
+    public void setId(long id) {
         this.id = id;
     }
+
+    //    /**
+//     * Sets the unique identifier of the task.
+//     *
+//     * @param id the unique idenifier of the task to set
+//     */
+//    private void setId(long id) {
+//        this.id = id;
+//    }
+
 
     /**
      * Sets the unique identifier of the project associated to the task.
@@ -74,6 +84,10 @@ public class Task {
      */
     private void setProjectId(long projectId) {
         this.projectId = projectId;
+    }
+
+    public long getProjectId() {
+        return projectId;
     }
 
     /**
@@ -112,6 +126,10 @@ public class Task {
      */
     private void setCreationTimestamp(long creationTimestamp) {
         this.creationTimestamp = creationTimestamp;
+    }
+
+    public long getCreationTimestamp() {
+        return creationTimestamp;
     }
 
     /**
