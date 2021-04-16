@@ -1,7 +1,6 @@
 package com.cleanup.todoc.model;
 
 import android.content.Context;
-import android.os.AsyncTask;
 
 import androidx.annotation.NonNull;
 import androidx.room.Database;
@@ -9,43 +8,41 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Database(entities = {Task.class}, version = 1)
 public abstract class TaskDataBase extends RoomDatabase {
 
-    private static TaskDataBase instance;
-
+    private static volatile TaskDataBase instance;
     public abstract TaskDao taskDao();
+    private static final int NUMBER_OF_THREADS = 5;
+    static final ExecutorService databaseWriteExecutor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
-    public static synchronized TaskDataBase getInstance(Context context){
-        if(instance == null){
+
+    public static synchronized TaskDataBase getInstance(final Context context) {
+        if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                     TaskDataBase.class,
                     "task_database")
-                    .fallbackToDestructiveMigration()
                     .addCallback(roomCallBack)
                     .build();
         }
         return instance;
     }
 
-    private static RoomDatabase.Callback roomCallBack = new RoomDatabase.Callback(){
+    private final static RoomDatabase.Callback roomCallBack = new RoomDatabase.Callback() {
         @Override
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
             super.onCreate(db);
-            new PopulateDbAsyncTask(instance).execute();
+            databaseWriteExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    TaskDao dao = instance.taskDao();
+                    dao.ascendingFilterName();
+                }
+            });
         }
     };
 
-    private static class PopulateDbAsyncTask extends AsyncTask<Void, Void, Void>{
-        private TaskDao mTaskDao;
-
-        private PopulateDbAsyncTask(TaskDataBase db){
-            mTaskDao = db.taskDao();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            return null;
-        }
-    }
 }

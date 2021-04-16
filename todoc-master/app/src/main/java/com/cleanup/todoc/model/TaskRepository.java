@@ -1,10 +1,8 @@
 package com.cleanup.todoc.model;
 
 import android.app.Application;
-import android.os.AsyncTask;
 
 import androidx.lifecycle.LiveData;
-import androidx.room.Query;
 
 import java.util.List;
 
@@ -26,18 +24,29 @@ public class TaskRepository {
         mAllTask = mTaskDao.getAllTask();
     }
 
-    public void insert(Task task){
-//        new InsertTaskAsyncTask(mTaskDao).execute(task);
-        final int method = 1;
-        new MyAsyncTask(mTaskDao, method).execute(task);
+    public void insert(final Task task){
+        TaskDataBase.databaseWriteExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                mTaskDao.insert(task);
+            }
+        });
     }
-    public void update(Task task){
-        final int method = 2;
-        new MyAsyncTask(mTaskDao, method).execute(task);
+    public void update(final Task task){
+        TaskDataBase.databaseWriteExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                mTaskDao.update(task);
+            }
+        });
     }
-    public void delete(Task task){
-        final int method = 3;
-        new MyAsyncTask(mTaskDao, method).execute(task);
+    public void delete(final Task task){
+        TaskDataBase.databaseWriteExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                mTaskDao.delete(task);
+            }
+        });
     }
     public LiveData<List<Task>> ascendingFilterName(){
         return mAscTaskName;
@@ -56,18 +65,4 @@ public class TaskRepository {
     }
 
 
-//    /**======================  Mieux gérer ici ============================*/
-//
-//    private static class InsertTaskAsyncTask extends AsyncTask<Task, Void, Void>{
-//        private TaskDao mTaskDao;
-//        private InsertTaskAsyncTask (TaskDao taskDao){
-//            mTaskDao = taskDao;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Task... tasks) {
-//            mTaskDao.insert(tasks[0]);
-//            return null;
-//        }
-//    }
 }
