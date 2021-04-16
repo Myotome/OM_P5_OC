@@ -1,5 +1,6 @@
 package com.cleanup.todoc.view;
 
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.Menu;
@@ -17,7 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,7 +28,6 @@ import com.cleanup.todoc.model.Task;
 import com.cleanup.todoc.viewModel.TaskViewModel;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -39,9 +39,7 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity implements TasksAdapter.DeleteTaskListener {
     private TaskViewModel mTaskViewModel;
-    public static final String EXTRA_PROJECT_ID = "com.cleanup.todoc.view.EXTRA_PROJECT_ID";
-    public static final String EXTRA_NAME = "com.cleanup.todoc.view.NAME";
-    public static final String EXTRA_DATE = "com.cleanup.todoc.view.EXTRA_DATE";
+
     /**
      * List of all projects available in the application
      */
@@ -56,13 +54,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     /**
      * The adapter which handles the list of tasks
      */
-    private final TasksAdapter adapter = new TasksAdapter(tasks, this);
-
-    /**
-     * The sort method to be used to display tasks
-     */
-    @NonNull
-    private SortMethod sortMethod = SortMethod.NONE;
+    private final TasksAdapter adapter = new TasksAdapter(new TasksAdapter.TaskDiff(), tasks,this);
 
     /**
      * Dialog to create a new task
@@ -85,17 +77,11 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     /**
      * The RecyclerView which displays the list of tasks
      */
-    // Suppress warning is safe because variable is initialized in onCreate
-    @SuppressWarnings("NullableProblems")
-    @NonNull
     private RecyclerView listTasks;
 
     /**
      * The TextView displaying the empty state
      */
-    // Suppress warning is safe because variable is initialized in onCreate
-    @SuppressWarnings("NullableProblems")
-    @NonNull
     private TextView lblNoTasks;
 
     @Override
@@ -103,13 +89,12 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        updateView();
-
         listTasks = findViewById(R.id.list_tasks);
         lblNoTasks = findViewById(R.id.lbl_no_task);
 
         listTasks.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         listTasks.setAdapter(adapter);
+        updateView();
 
         findViewById(R.id.fab_add_task).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -120,17 +105,18 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     }
 
     private void updateView() {
-        mTaskViewModel = ViewModelProviders.of(this).get(TaskViewModel.class);
+        mTaskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
         mTaskViewModel.getAllTask().observe(this, new Observer<List<Task>>() {
             @Override
             public void onChanged(List<Task> tasks) {
-                if (tasks.size()==0) {
+                if (tasks.size() == 0) {
                     lblNoTasks.setVisibility(View.VISIBLE);
                     listTasks.setVisibility(View.GONE);
                 } else {
                     lblNoTasks.setVisibility(View.GONE);
                     listTasks.setVisibility(View.VISIBLE);
-                }adapter.updateTasks(tasks);
+                }
+                adapter.updateTasks(tasks);
             }
         });
     }
@@ -141,49 +127,43 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         return true;
     }
 
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-//        int id = item.getItemId();
-//
-//        if (id == R.id.filter_alphabetical) {
-//            mTaskViewModel.ascendingFilterName();
-////            sortMethod = SortMethod.ALPHABETICAL;
-//        } else if (id == R.id.filter_alphabetical_inverted) {
-//            mTaskViewModel.descendingFilterName();
-////            sortMethod = SortMethod.ALPHABETICAL_INVERTED;
-//        } else if (id == R.id.filter_oldest_first) {
-//            mTaskViewModel.ascendingFilterDate();
-////            sortMethod = SortMethod.OLD_FIRST;
-//        } else if (id == R.id.filter_recent_first) {
-//            mTaskViewModel.descendingFilterDate();
-////            sortMethod = SortMethod.RECENT_FIRST;
-//        }
-//        updateView();
-////        updateTasks();
-//
-//        return super.onOptionsItemSelected(item);
+
         switch (item.getItemId()) {
             case R.id.filter_alphabetical:
-                mTaskViewModel.ascendingFilterName();
-                adapter.notifyDataSetChanged();
+                mTaskViewModel.ascendingFilterName().observe(this, new Observer<List<Task>>() {
+                    @Override
+                    public void onChanged(List<Task> tasks) {
+                        adapter.updateTasks(tasks);
+                    }
+                });
                 updateView();
                 return true;
             case R.id.filter_alphabetical_inverted:
                 mTaskViewModel.descendingFilterName().observe(this, new Observer<List<Task>>() {
                     @Override
                     public void onChanged(List<Task> tasks) {
-                        adapter.notifyDataSetChanged();
+                        adapter.updateTasks(tasks);
                     }
                 });
-//                updateView();
                 return true;
             case R.id.filter_oldest_first:
-                mTaskViewModel.ascendingFilterDate();
-                updateView();
+                mTaskViewModel.ascendingFilterDate().observe(this, new Observer<List<Task>>() {
+                    @Override
+                    public void onChanged(List<Task> tasks) {
+                        adapter.updateTasks(tasks);
+                    }
+                });
                 return true;
             case R.id.filter_recent_first:
-                mTaskViewModel.descendingFilterDate();
-                updateView();
+                mTaskViewModel.descendingFilterDate().observe(this, new Observer<List<Task>>() {
+                    @Override
+                    public void onChanged(List<Task> tasks) {
+                        adapter.updateTasks(tasks);
+                    }
+                });
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -193,10 +173,8 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
 
     @Override
     public void onDeleteTask(Task task) {
-//        tasks.remove(task);
         mTaskViewModel.delete(task);
         updateView();
-//        updateTasks();
     }
 
     /**
@@ -222,24 +200,19 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             }
             // If both project and name of the task have been set
             else if (taskProject != null) {
-//                // TODO: Replace this by id of persisted task
-//                long id = (long) (Math.random() * 50000);
-
 
                 Task task = new Task(
-//                        id,
                         taskProject.getId(),
                         taskName,
                         new Date().getTime()
                 );
                 mTaskViewModel.insert(task);
                 updateView();
-//                addTask(task);
 
                 dialogInterface.dismiss();
             }
             // If name has been set, but project has not been set (this should never occur)
-            else{
+            else {
                 Toast.makeText(this, "Task Not Saved", Toast.LENGTH_SHORT).show();
                 dialogInterface.dismiss();
             }
@@ -262,49 +235,6 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         dialogSpinner = dialog.findViewById(R.id.project_spinner);
 
         populateDialogSpinner();
-    }
-
-//    /**
-//     * Adds the given task to the list of created tasks.
-//     *
-//     * @param task the task to be added to the list
-//     */
-//    private void addTask(@NonNull Task task) {
-//
-//        mTaskViewModel.insert(task);
-//        Toast.makeText(this, "Task saved", Toast.LENGTH_SHORT).show();
-//        updateView();
-//        tasks.add(task);
-//        updateTasks();
-//    }
-
-    /**
-     * Updates the list of tasks in the UI
-     */
-    private void updateTasks() {
-        if (tasks.size() == 0) {
-            lblNoTasks.setVisibility(View.VISIBLE);
-            listTasks.setVisibility(View.GONE);
-        } else {
-            lblNoTasks.setVisibility(View.GONE);
-            listTasks.setVisibility(View.VISIBLE);
-            switch (sortMethod) {
-                case ALPHABETICAL:
-                    Collections.sort(tasks, new Task.TaskAZComparator());
-                    break;
-                case ALPHABETICAL_INVERTED:
-                    Collections.sort(tasks, new Task.TaskZAComparator());
-                    break;
-                case RECENT_FIRST:
-                    Collections.sort(tasks, new Task.TaskRecentComparator());
-                    break;
-                case OLD_FIRST:
-                    Collections.sort(tasks, new Task.TaskOldComparator());
-                    break;
-
-            }
-            adapter.updateTasks(tasks);
-        }
     }
 
     /**
@@ -359,31 +289,5 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         if (dialogSpinner != null) {
             dialogSpinner.setAdapter(adapter);
         }
-    }
-
-    /**
-     * List of all possible sort methods for task
-     */
-    private enum SortMethod {
-        /**
-         * Sort alphabetical by name
-         */
-        ALPHABETICAL,
-        /**
-         * Inverted sort alphabetical by name
-         */
-        ALPHABETICAL_INVERTED,
-        /**
-         * Lastly created first
-         */
-        RECENT_FIRST,
-        /**
-         * First created first
-         */
-        OLD_FIRST,
-        /**
-         * No sort
-         */
-        NONE
     }
 }
