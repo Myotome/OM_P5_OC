@@ -3,7 +3,10 @@ package com.cleanup.todoc.model;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.PrimaryKey;
+
+import static androidx.room.ForeignKey.CASCADE;
 
 /**
  * <p>Model for the tasks of the application.</p>
@@ -21,6 +24,10 @@ public class Task {
     /**
      * The unique identifier of the project associated to the task
      */
+    @ForeignKey(entity = Project.class,
+            parentColumns = "projectId",
+            childColumns = "projectId",
+            onDelete = CASCADE)
     private long projectId;
 
     /**
