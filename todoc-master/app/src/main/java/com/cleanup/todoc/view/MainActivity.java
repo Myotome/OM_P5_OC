@@ -1,6 +1,6 @@
 package com.cleanup.todoc.view;
 
-import android.annotation.SuppressLint;
+
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.Menu;
@@ -17,7 +17,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,11 +24,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.cleanup.todoc.R;
 import com.cleanup.todoc.model.Project;
 import com.cleanup.todoc.model.Task;
-import com.cleanup.todoc.viewModel.TaskViewModel;
+import com.cleanup.todoc.view_model.TaskViewModel;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 /**
  * <p>Home activity of the application which is displayed when the user opens the app.</p>
@@ -84,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      */
     private TextView lblNoTasks;
 
+    private int filterChoice = 0;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,28 +96,22 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         listTasks.setAdapter(adapter);
         updateView();
 
-        findViewById(R.id.fab_add_task).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showAddTaskDialog();
-            }
-        });
+        findViewById(R.id.fab_add_task).setOnClickListener(view -> showAddTaskDialog());
     }
 
     private void updateView() {
         mTaskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
-        mTaskViewModel.getAllTask().observe(this, new Observer<List<Task>>() {
-            @Override
-            public void onChanged(List<Task> tasks) {
-                if (tasks.size() == 0) {
-                    lblNoTasks.setVisibility(View.VISIBLE);
-                    listTasks.setVisibility(View.GONE);
-                } else {
-                    lblNoTasks.setVisibility(View.GONE);
-                    listTasks.setVisibility(View.VISIBLE);
-                }
-                adapter.updateTasks(tasks);
+        mTaskViewModel.getAllTask().observe(this, tasks -> {
+
+            mTaskViewModel.filterMethod(filterChoice, tasks);
+            if (tasks.size() == 0) {
+                lblNoTasks.setVisibility(View.VISIBLE);
+                listTasks.setVisibility(View.GONE);
+            } else {
+                lblNoTasks.setVisibility(View.GONE);
+                listTasks.setVisibility(View.VISIBLE);
             }
+            adapter.updateTasks(tasks);
         });
     }
 
@@ -126,49 +120,21 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         getMenuInflater().inflate(R.menu.actions, menu);
         return true;
     }
-
-    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
 
-        switch (item.getItemId()) {
-            case R.id.filter_alphabetical:
-                mTaskViewModel.ascendingFilterName().observe(this, new Observer<List<Task>>() {
-                    @Override
-                    public void onChanged(List<Task> tasks) {
-                        adapter.updateTasks(tasks);
-                    }
-                });
-                updateView();
-                return true;
-            case R.id.filter_alphabetical_inverted:
-                mTaskViewModel.descendingFilterName().observe(this, new Observer<List<Task>>() {
-                    @Override
-                    public void onChanged(List<Task> tasks) {
-                        adapter.updateTasks(tasks);
-                    }
-                });
-                return true;
-            case R.id.filter_oldest_first:
-                mTaskViewModel.ascendingFilterDate().observe(this, new Observer<List<Task>>() {
-                    @Override
-                    public void onChanged(List<Task> tasks) {
-                        adapter.updateTasks(tasks);
-                    }
-                });
-                return true;
-            case R.id.filter_recent_first:
-                mTaskViewModel.descendingFilterDate().observe(this, new Observer<List<Task>>() {
-                    @Override
-                    public void onChanged(List<Task> tasks) {
-                        adapter.updateTasks(tasks);
-                    }
-                });
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-
+        if (id == R.id.filter_alphabetical) {
+            filterChoice = 1;
+        } else if (id == R.id.filter_alphabetical_inverted) {
+            filterChoice = 2;
+        } else if (id == R.id.filter_oldest_first) {
+            filterChoice = 3;
+        } else if (id == R.id.filter_recent_first) {
+            filterChoice = 4;
         }
+            updateView();
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -249,32 +215,19 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         alertBuilder.setTitle(R.string.add_task);
         alertBuilder.setView(R.layout.dialog_add_task);
         alertBuilder.setPositiveButton(R.string.add, null);
-        alertBuilder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                dialogEditText = null;
-                dialogSpinner = null;
-                dialog = null;
-            }
+        alertBuilder.setOnDismissListener(dialogInterface -> {
+            dialogEditText = null;
+            dialogSpinner = null;
+            dialog = null;
         });
 
         dialog = alertBuilder.create();
 
         // This instead of listener to positive button in order to avoid automatic dismiss
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+        dialog.setOnShowListener(dialogInterface -> {
 
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-
-                Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                button.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-                        onPositiveButtonClick(dialog);
-                    }
-                });
-            }
+            Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(view -> onPositiveButtonClick(dialog));
         });
 
         return dialog;

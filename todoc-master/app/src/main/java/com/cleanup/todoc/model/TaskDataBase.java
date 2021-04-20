@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Task.class}, version = 1)
+@Database(entities = {Task.class, Project.class}, version = 2)
 public abstract class TaskDataBase extends RoomDatabase {
 
     private static volatile TaskDataBase instance;
@@ -35,12 +35,9 @@ public abstract class TaskDataBase extends RoomDatabase {
         @Override
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
             super.onCreate(db);
-            databaseWriteExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    TaskDao dao = instance.taskDao();
-                    dao.ascendingFilterName();
-                }
+            databaseWriteExecutor.execute(() -> {
+                TaskDao dao = instance.taskDao();
+                dao.getAllTask();
             });
         }
     };
