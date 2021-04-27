@@ -1,11 +1,18 @@
 package com.cleanup.todoc;
 
+import android.content.ContentValues;
+
+import androidx.annotation.NonNull;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Room;
+import androidx.room.RoomDatabase;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.cleanup.todoc.model.Project;
 import com.cleanup.todoc.model.Task;
 import com.cleanup.todoc.model.TaskDao;
 import com.cleanup.todoc.model.TaskDataBase;
@@ -28,9 +35,9 @@ public class TaskDaoInstrumentedTest {
 
     private TaskDataBase mDataBase;
     private TaskDao mTaskDao;
-    private Task task = new Task (1, "Test Task", 123456);
-    private Task task2 = new Task (2, "Test Task2", 123456);
-    private Task task3 = new Task (3, "Test Task3", 123456);
+    private static Task task = new Task (1, "Test Task", 123456);
+    private static Task task2 = new Task (1, "Test Task2", 123456);
+    private static Task task3 = new Task (1, "Test Task3", 123456);
 
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
@@ -41,6 +48,18 @@ public class TaskDaoInstrumentedTest {
                 ApplicationProvider.getApplicationContext(),
                 TaskDataBase.class)
                 .allowMainThreadQueries()
+                .addCallback(new RoomDatabase.Callback() {
+                    @Override
+                    public void onCreate(@NonNull SupportSQLiteDatabase db) {
+                        super.onCreate(db);
+                        ContentValues projectContentValues = new ContentValues();
+
+                        projectContentValues.put("id", 1L);
+                        projectContentValues.put("name", "Projet Tartampion");
+                        projectContentValues.put("color", 0xFFEADAD1);
+                        db.insert("project_table", OnConflictStrategy.REPLACE, projectContentValues);
+                    }
+                })
                 .build();
         mTaskDao = mDataBase.taskDao();
     }

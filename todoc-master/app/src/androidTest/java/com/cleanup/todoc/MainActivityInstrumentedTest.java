@@ -9,6 +9,8 @@ import android.widget.TextView;
 
 import com.cleanup.todoc.view.MainActivity;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,6 +38,13 @@ public class MainActivityInstrumentedTest {
 
     @Rule
     public ActivityTestRule<MainActivity> rule = new ActivityTestRule<>(MainActivity.class);
+
+    @Before
+    public void cleanDb(){
+        MainActivity activity = rule.getActivity();
+        activity.deleteDatabase("task_database");
+
+    }
 
 
     @Test
@@ -122,11 +131,6 @@ public class MainActivityInstrumentedTest {
                 .check(matches(withText("zzz Tâche example")));
         onView(withRecyclerView(R.id.list_tasks).atPositionOnView(2, R.id.lbl_task_name))
                 .check(matches(withText("aaa Tâche example")));
-
-        //Clean application
-        onView(withRecyclerView(R.id.list_tasks).atPositionOnView(0, R.id.img_delete)).perform(click());
-        onView(withRecyclerView(R.id.list_tasks).atPositionOnView(0, R.id.img_delete)).perform(click());
-        onView(withRecyclerView(R.id.list_tasks).atPositionOnView(0, R.id.img_delete)).perform(click());
 
     }
 }

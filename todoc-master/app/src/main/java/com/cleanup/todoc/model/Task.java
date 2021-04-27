@@ -13,7 +13,10 @@ import static androidx.room.ForeignKey.CASCADE;
  *
  * @author Gaëtan HERFRAY
  */
-@Entity(tableName = "task_table")
+@Entity(tableName = "task_table", foreignKeys = @ForeignKey(entity = Project.class,
+        parentColumns = "id",
+        childColumns = "projectId",
+        onDelete = CASCADE))
 public class Task {
     /**
      * The unique identifier of the task
@@ -24,10 +27,6 @@ public class Task {
     /**
      * The unique identifier of the project associated to the task
      */
-    @ForeignKey(entity = Project.class,
-            parentColumns = "projectId",
-            childColumns = "projectId",
-            onDelete = CASCADE)
     private long projectId;
 
     /**
