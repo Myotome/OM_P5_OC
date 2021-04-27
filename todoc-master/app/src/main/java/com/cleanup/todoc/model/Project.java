@@ -18,7 +18,6 @@ public class Project {
      * The unique identifier of the project
      */
     @PrimaryKey
-    @ColumnInfo(name = "projectId")
     private final long id;
 
     /**
